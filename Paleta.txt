@@ -1,0 +1,2 @@
+Aqua : #2ec4b6 (on hover #1f9d8f)
+Background: # 0f0f0f
