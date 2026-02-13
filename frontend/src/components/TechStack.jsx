@@ -58,7 +58,7 @@ const stack = [
 
 const TechStack = () => {
   return (
-    <section className="max-w-7xl mx-auto px-8 py-24">
+    <section id="tech" className="max-w-7xl mx-auto px-8 py-24">
       <h2 className="text-3xl font-bold mb-16">Tech Stack</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">

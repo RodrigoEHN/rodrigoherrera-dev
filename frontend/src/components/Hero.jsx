@@ -14,8 +14,8 @@ const Hero = () => {
           </h2>
 
           <p className="text-gray-400 leading-relaxed max-w-xl">
-            Building scalable web applications with React and Node.js.
-            Focused on clean architecture and real-world solutions.
+            Fullstack Developer focused on building scalable
+            and production-ready web applications.
           </p>
         </div>
 
