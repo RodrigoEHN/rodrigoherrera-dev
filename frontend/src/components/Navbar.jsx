@@ -30,7 +30,7 @@ const Navbar = () => {
         {/* CTA */}
         <div className="hidden md:block">
           <a
-            href="/resume.pdf"
+            href="/Rodrigo_Herrera_Navarro_CV.pdf"
             download
             className="px-5 py-2 bg-[#2ec4b6] text-black font-medium rounded-full hover:bg-[#1f9d8f] transition text-sm"
           >
