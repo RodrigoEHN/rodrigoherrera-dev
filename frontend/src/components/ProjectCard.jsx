@@ -1,13 +1,8 @@
 import { Github, ExternalLink } from "lucide-react";
-import { FaReact } from "react-icons/fa";
-import { SiCss3 } from "react-icons/si";
-import { TbBrandReactNative } from "react-icons/tb";
+import { TECH_STACK } from "../constants/techConfig";
 
-const techIcons = {
-  React: <FaReact className="text-[#61DAFB]" size={16} />,
-  "Context API": <TbBrandReactNative className="text-[#2ec4b6]" size={16} />,
-  CSS: <SiCss3 className="text-[#264de4]" size={16} />,
-};
+
+
 
 const ProjectCard = ({ project }) => {
   return (
@@ -33,16 +28,18 @@ const ProjectCard = ({ project }) => {
 
         {/* STACK */}
         <div className="flex flex-wrap gap-3 mb-8">
-          {project.stack.map((tech, index) => (
+          {project.tech?.map((tech, index) => (
             <span
               key={index}
               className="flex items-center gap-2 text-sm px-3 py-1 bg-[#1a1a1a] rounded-full text-[#2ec4b6]"
             >
-              {techIcons[tech]}
+              {TECH_STACK[tech]?.icon || null}
               {tech}
             </span>
           ))}
         </div>
+
+
 
         {/* BUTTONS */}
         <div className="flex gap-4">
@@ -56,7 +53,7 @@ const ProjectCard = ({ project }) => {
           </a>
 
           <a
-            href={project.live}
+            href={project.demo}
             target="_blank"
             className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#1a1a1a] text-gray-200 hover:bg-[#2ec4b6] hover:text-black transition-all duration-200"
           >
