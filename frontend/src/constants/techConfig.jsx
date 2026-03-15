@@ -7,6 +7,7 @@ import {
   SiNextdotjs,
   SiExpress,
   SiJsonwebtokens,
+  SiMysql
 } from "react-icons/si";
 
 export const TECH_STACK = {
@@ -18,6 +19,9 @@ export const TECH_STACK = {
   },
   MongoDB: {
     icon: <SiMongodb className="text-[#4DB33D]" size={16} />,
+  },
+  MySQL: {
+    icon: <SiMysql className="text-[#4DB33D]" size={16} />,
   },
   Express: {
     icon: <SiExpress size={16} />,
