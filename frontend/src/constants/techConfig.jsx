@@ -53,7 +53,7 @@ export const TECH_STACK = {
   },
 
   Express: {
-    icon: <SiExpress size={16} />,
+    icon: <SiExpress className="text-[#ffffff]" size={16} />,
   },
 
   MongoDB: {
