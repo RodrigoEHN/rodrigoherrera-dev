@@ -3,10 +3,10 @@ import { FaGithub, FaLinkedin } from "react-icons/fa";
 
 export function Hero() {
   return (
-    <section id="home" className="mx-auto max-w-7xl scroll-mt-24 px-8 pb-24 pt-32">
-      <div className="grid items-center gap-16 md:grid-cols-2">
-        <div className="flex flex-col gap-6">
-          <h1 className="text-5xl font-bold leading-tight">Rodrigo Herrera</h1>
+    <section id="home" className="mx-auto max-w-7xl scroll-mt-20 px-6 pb-16 pt-24 md:px-8 md:pb-20 md:pt-28">
+      <div className="grid items-center gap-10 md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_360px]">
+        <div className="flex flex-col gap-5">
+          <h1 className="text-4xl font-bold leading-tight md:text-5xl">Rodrigo Herrera</h1>
 
           <h2 className="text-sm font-medium uppercase tracking-widest text-[#2ec4b6]">
             Web Developer
@@ -17,12 +17,12 @@ export function Hero() {
             applications.
           </p>
 
-          <div className="flex flex-wrap gap-4 pt-4">
+          <div className="flex flex-wrap gap-3 pt-2">
             <a
               href="https://github.com/RodrigoEHN"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-xl border border-gray-700 bg-[#1a1a1a] px-6 py-3 transition-all duration-200 hover:bg-[#2ec4b6] hover:text-black"
+                className="flex items-center gap-3 rounded-lg border border-gray-700 bg-[#1a1a1a] px-5 py-2.5 transition-all duration-200 hover:bg-[#2ec4b6] hover:text-black"
             >
               <FaGithub />
               GitHub
@@ -32,7 +32,7 @@ export function Hero() {
               href="https://www.linkedin.com/in/ehnrodrigo/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-xl border border-gray-700 bg-[#1a1a1a] px-6 py-3 transition-all duration-200 hover:bg-[#2ec4b6] hover:text-black"
+                className="flex items-center gap-3 rounded-lg border border-gray-700 bg-[#1a1a1a] px-5 py-2.5 transition-all duration-200 hover:bg-[#2ec4b6] hover:text-black"
             >
               <FaLinkedin />
               LinkedIn
@@ -41,7 +41,7 @@ export function Hero() {
         </div>
 
         <div className="flex justify-center md:justify-end">
-          <div className="relative h-80 w-80 overflow-hidden rounded-full shadow-2xl">
+          <div className="relative h-64 w-64 overflow-hidden rounded-full shadow-2xl md:h-72 md:w-72 lg:h-80 lg:w-80">
             <Image
               src="/profile.jpg"
               alt="Rodrigo Herrera"

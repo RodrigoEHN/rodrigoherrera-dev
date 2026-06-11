@@ -52,18 +52,18 @@ const stack = [
 
 export function TechStack() {
   return (
-    <section id="tech" className="mx-auto max-w-7xl px-8 py-24">
-      <h2 className="mb-16 text-3xl font-bold">Tech Stack</h2>
+    <section id="tech" className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-16">
+      <h2 className="mb-10 text-2xl font-bold md:text-3xl">Tech Stack</h2>
 
-      <div className="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-5 lg:grid-cols-5">
         {stack.map((group) => (
           <div
             key={group.title}
-            className="rounded-2xl border border-gray-800 bg-[#111111] p-8 transition-all duration-300 hover:border-[#2ec4b6]"
+            className="rounded-xl border border-gray-800 bg-[#111111] p-5 transition-all duration-300 hover:border-[#2ec4b6] md:p-6"
           >
-            <h3 className="mb-6 text-lg font-semibold text-[#2ec4b6]">{group.title}</h3>
+            <h3 className="mb-4 text-base font-semibold text-[#2ec4b6] md:text-lg">{group.title}</h3>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {group.tech.map((item) => (
                 <div
                   key={item.name}

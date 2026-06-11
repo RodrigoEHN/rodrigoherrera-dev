@@ -16,8 +16,8 @@ export function Navbar() {
 
   return (
     <nav className="fixed left-0 top-0 z-50 w-full border-b border-gray-800 bg-[#0f0f0f]/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-4">
-        <div className="hidden items-center gap-8 text-sm text-gray-300 md:flex">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 md:px-8">
+        <div className="hidden items-center gap-6 text-sm text-gray-300 md:flex">
           {links.map((link) => (
             <a key={link.href} href={link.href} className="transition hover:text-[#2ec4b6]">
               {link.label}
@@ -29,7 +29,7 @@ export function Navbar() {
           <a
             href="/Rodrigo_Herrera_Navarro_CV.pdf"
             download
-            className="rounded-full bg-[#2ec4b6] px-5 py-2 text-sm font-medium text-black transition hover:bg-[#1f9d8f]"
+            className="rounded-full bg-[#2ec4b6] px-4 py-2 text-sm font-medium text-black transition hover:bg-[#1f9d8f]"
           >
             Download Resume
           </a>
@@ -47,7 +47,7 @@ export function Navbar() {
       </div>
 
       {open ? (
-        <div className="flex flex-col gap-6 border-t border-gray-800 bg-[#111111] px-8 py-6 text-sm text-gray-300 md:hidden">
+        <div className="flex flex-col gap-5 border-t border-gray-800 bg-[#111111] px-6 py-5 text-sm text-gray-300 md:hidden">
           {links.map((link) => (
             <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
               {link.label}

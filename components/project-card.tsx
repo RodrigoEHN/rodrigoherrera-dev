@@ -6,8 +6,8 @@ import type { Project } from "@/types/project";
 
 export function ProjectCard({ project }: { project: Project }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-gray-800 bg-[#111111] transition-all duration-300 hover:border-[#2ec4b6]">
-      <div className="relative h-64 overflow-hidden">
+    <article className="overflow-hidden rounded-xl border border-gray-800 bg-[#111111] transition-all duration-300 hover:border-[#2ec4b6]">
+      <div className="relative h-52 overflow-hidden md:h-56">
         <Image
           src={project.image_url || "/projects/guitarla.png"}
           alt={project.title}
@@ -17,16 +17,18 @@ export function ProjectCard({ project }: { project: Project }) {
         />
       </div>
 
-      <div className="p-8">
-        <h3 className="mb-4 text-xl font-semibold">{project.title}</h3>
+      <div className="p-6">
+        <h3 className="mb-3 text-lg font-semibold md:text-xl">{project.title}</h3>
 
-        <p className="mb-6 leading-relaxed text-gray-400">{project.description}</p>
+        <p className="mb-5 text-sm leading-relaxed text-gray-400 md:text-base">
+          {project.description}
+        </p>
 
-        <div className="mb-8 flex flex-wrap gap-3">
+        <div className="mb-6 flex flex-wrap gap-2">
           {project.tech?.map((tech) => (
             <span
               key={tech}
-              className="flex items-center gap-2 rounded-full bg-[#1a1a1a] px-3 py-1 text-sm text-[#2ec4b6]"
+              className="flex items-center gap-2 rounded-full bg-[#1a1a1a] px-3 py-1 text-xs text-[#2ec4b6] md:text-sm"
             >
               {TECH_STACK[tech]?.icon || null}
               {tech}
@@ -34,13 +36,13 @@ export function ProjectCard({ project }: { project: Project }) {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-3">
           {project.github ? (
             <a
               href={project.github}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg bg-[#1a1a1a] px-5 py-2 text-gray-200 transition-all duration-200 hover:bg-[#2ec4b6] hover:text-black"
+              className="flex items-center gap-2 rounded-lg bg-[#1a1a1a] px-4 py-2 text-sm text-gray-200 transition-all duration-200 hover:bg-[#2ec4b6] hover:text-black"
             >
               <FaGithub size={18} />
               GitHub
@@ -52,7 +54,7 @@ export function ProjectCard({ project }: { project: Project }) {
               href={project.demo}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-lg bg-[#1a1a1a] px-5 py-2 text-gray-200 transition-all duration-200 hover:bg-[#2ec4b6] hover:text-black"
+              className="flex items-center gap-2 rounded-lg bg-[#1a1a1a] px-4 py-2 text-sm text-gray-200 transition-all duration-200 hover:bg-[#2ec4b6] hover:text-black"
             >
               <ExternalLink size={18} />
               Live Demo
