@@ -29,6 +29,7 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
 
   const imagePreview = useMemo(() => {
     if (imageFile) {
@@ -49,7 +50,8 @@ export function AdminDashboard() {
   const fetchProjects = useCallback(async () => {
     const { data, error } = await supabase
       .from("projects")
-      .select("id,title,description,tech,github,demo,image_url,created_at,updated_at")
+      .select("id,title,description,tech,github,demo,image_url,sort_order,created_at,updated_at")
+      .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -57,7 +59,12 @@ export function AdminDashboard() {
       return;
     }
 
-    setProjects(data ?? []);
+    setProjects(
+      (data ?? []).map((project, index) => ({
+        ...project,
+        sort_order: project.sort_order ?? index,
+      })),
+    );
   }, [supabase]);
 
   useEffect(() => {
@@ -159,6 +166,7 @@ export function AdminDashboard() {
         github: formData.github || null,
         demo: formData.demo || null,
         image_url: imageUrl || null,
+        sort_order: editingId ? projects.find((project) => project.id === editingId)?.sort_order ?? 0 : projects.length,
       };
 
       const result = editingId
@@ -211,6 +219,49 @@ export function AdminDashboard() {
 
     setMessage("Project deleted.");
     await fetchProjects();
+  };
+
+  const persistProjectOrder = async (orderedProjects: Project[]) => {
+    const updates = orderedProjects.map((project, index) =>
+      supabase.from("projects").update({ sort_order: index }).eq("id", project.id),
+    );
+
+    const results = await Promise.all(updates);
+    const failedUpdate = results.find((result) => result.error);
+
+    if (failedUpdate?.error) {
+      setMessage(failedUpdate.error.message);
+      await fetchProjects();
+      return;
+    }
+
+    setMessage("Project order updated.");
+  };
+
+  const moveProject = async (targetProjectId: string) => {
+    if (!draggedProjectId || draggedProjectId === targetProjectId) {
+      return;
+    }
+
+    const fromIndex = projects.findIndex((project) => project.id === draggedProjectId);
+    const toIndex = projects.findIndex((project) => project.id === targetProjectId);
+
+    if (fromIndex === -1 || toIndex === -1) {
+      return;
+    }
+
+    const reorderedProjects = [...projects];
+    const [movedProject] = reorderedProjects.splice(fromIndex, 1);
+    reorderedProjects.splice(toIndex, 0, movedProject);
+
+    const normalizedProjects = reorderedProjects.map((project, index) => ({
+      ...project,
+      sort_order: index,
+    }));
+
+    setProjects(normalizedProjects);
+    setDraggedProjectId(null);
+    await persistProjectOrder(normalizedProjects);
   };
 
   if (loading) {
@@ -476,9 +527,12 @@ export function AdminDashboard() {
             <div>
               <h2 className="text-2xl font-semibold">Existing Projects</h2>
               <p className="mt-1 text-sm text-gray-500">
-                {projects.length} {projects.length === 1 ? "project" : "projects"} in Supabase.
+                Drag projects to choose what appears first on the public site.
               </p>
             </div>
+            <span className="hidden rounded-full border border-gray-800 bg-[#111111] px-3 py-1 text-xs text-gray-400 sm:inline">
+              {projects.length} {projects.length === 1 ? "project" : "projects"}
+            </span>
           </div>
 
           {projects.length === 0 ? (
@@ -489,13 +543,32 @@ export function AdminDashboard() {
             projects.map((project) => (
               <div
                 key={project.id}
-                className="rounded-2xl border border-gray-800 bg-[#111111] p-5"
+                draggable
+                onDragStart={() => setDraggedProjectId(project.id)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => void moveProject(project.id)}
+                onDragEnd={() => setDraggedProjectId(null)}
+                className={`rounded-2xl border bg-[#111111] p-5 transition ${
+                  draggedProjectId === project.id
+                    ? "border-[#2ec4b6] opacity-60"
+                    : "border-gray-800 hover:border-gray-700"
+                }`}
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold">{project.title}</h3>
-                    <p className="mt-2 max-w-2xl text-sm text-gray-400">{project.description}</p>
-                    <p className="mt-3 text-xs text-[#2ec4b6]">{project.tech.join(", ")}</p>
+                  <div className="flex gap-4">
+                    <div
+                      className="flex h-10 w-10 shrink-0 cursor-grab items-center justify-center rounded-xl border border-gray-800 bg-[#1a1a1a] text-sm text-gray-500 active:cursor-grabbing"
+                      title="Drag to reorder"
+                    >
+                      {project.sort_order + 1}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold">{project.title}</h3>
+                      <p className="mt-2 max-w-2xl text-sm text-gray-400">
+                        {project.description}
+                      </p>
+                      <p className="mt-3 text-xs text-[#2ec4b6]">{project.tech.join(", ")}</p>
+                    </div>
                   </div>
 
                   <div className="flex gap-3">

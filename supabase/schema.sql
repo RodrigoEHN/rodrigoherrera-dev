@@ -8,9 +8,24 @@ create table if not exists public.projects (
   github text,
   demo text,
   image_url text,
+  sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.projects
+add column if not exists sort_order integer not null default 0;
+
+with ordered_projects as (
+  select
+    id,
+    row_number() over (order by sort_order asc, created_at desc) - 1 as next_sort_order
+  from public.projects
+)
+update public.projects
+set sort_order = ordered_projects.next_sort_order
+from ordered_projects
+where public.projects.id = ordered_projects.id;
 
 create or replace function public.set_updated_at()
 returns trigger

@@ -6,6 +6,7 @@ export type Project = {
   github: string | null;
   demo: string | null;
   image_url: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string | null;
 };
