@@ -16,6 +16,11 @@ const emptyForm: ProjectFormInput = {
   image_url: "",
 };
 
+type SupabaseError = {
+  code?: string;
+  message?: string;
+};
+
 export function AdminDashboard() {
   const supabase = useMemo(() => createClient(), []);
 
@@ -55,6 +60,27 @@ export function AdminDashboard() {
       .order("created_at", { ascending: false });
 
     if (error) {
+      if ((error as SupabaseError).code === "42703") {
+        const fallback = await supabase
+          .from("projects")
+          .select("id,title,description,tech,github,demo,image_url,created_at,updated_at")
+          .order("created_at", { ascending: false });
+
+        if (fallback.error) {
+          setMessage(fallback.error.message);
+          return;
+        }
+
+        setProjects(
+          (fallback.data ?? []).map((project, index) => ({
+            ...project,
+            sort_order: index,
+          })),
+        );
+        setMessage("Run the updated Supabase SQL to enable drag-and-drop ordering.");
+        return;
+      }
+
       setMessage(error.message);
       return;
     }
@@ -169,9 +195,23 @@ export function AdminDashboard() {
         sort_order: editingId ? projects.find((project) => project.id === editingId)?.sort_order ?? 0 : projects.length,
       };
 
-      const result = editingId
+      let result = editingId
         ? await supabase.from("projects").update(payload).eq("id", editingId)
         : await supabase.from("projects").insert(payload);
+
+      if (result.error && (result.error as SupabaseError).code === "42703") {
+        const payloadWithoutSortOrder = {
+          title: payload.title,
+          description: payload.description,
+          tech: payload.tech,
+          github: payload.github,
+          demo: payload.demo,
+          image_url: payload.image_url,
+        };
+        result = editingId
+          ? await supabase.from("projects").update(payloadWithoutSortOrder).eq("id", editingId)
+          : await supabase.from("projects").insert(payloadWithoutSortOrder);
+      }
 
       if (result.error) {
         throw result.error;
@@ -230,6 +270,12 @@ export function AdminDashboard() {
     const failedUpdate = results.find((result) => result.error);
 
     if (failedUpdate?.error) {
+      if ((failedUpdate.error as SupabaseError).code === "42703") {
+        setMessage("Run the updated Supabase SQL before saving project order.");
+        await fetchProjects();
+        return;
+      }
+
       setMessage(failedUpdate.error.message);
       await fetchProjects();
       return;

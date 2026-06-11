@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     images: ["/profile.jpg"],
   },
   icons: {
-    icon: "/favicon.svg",
+    icon: "/fossil-illustration-2-svgrepo-com.svg",
   },
 };
 
