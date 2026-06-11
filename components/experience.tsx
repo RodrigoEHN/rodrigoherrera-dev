@@ -1,30 +1,6 @@
-const experiences = [
-  {
-    role: "Freelance Fullstack Developer",
-    company: "Self-employed",
-    period: "2024 - Present",
-    points: [
-      "Designed and developed fullstack web applications using React, Node.js and Express.",
-      "Built RESTful APIs implementing CRUD operations and structured routing patterns.",
-      "Integrated frontend with backend services using asynchronous data fetching and state management.",
-      "Worked with MongoDB for data modeling and persistence in production-ready environments.",
-      "Deployed applications using Vercel and managed environment configuration for different stages.",
-    ],
-  },
-  {
-    role: "Investigation Specialist",
-    company: "Amazon",
-    period: "2022 - Present",
-    points: [
-      "Analyzed operational data to identify patterns, anomalies and risk indicators.",
-      "Leveraged internal reporting tools and structured datasets to support data-driven decisions.",
-      "Created dashboards and case documentation frameworks to improve workflow efficiency.",
-      "Applied analytical reasoning and process optimization techniques in high-volume environments.",
-    ],
-  },
-];
+import type { ExperienceItem } from "@/types/content";
 
-export function Experience() {
+export function Experience({ experiences }: { experiences: ExperienceItem[] }) {
   return (
     <section id="experience" className="mx-auto max-w-5xl scroll-mt-20 px-6 py-14 md:px-8 md:py-16">
       <h2 className="mb-10 text-2xl font-bold md:text-3xl">Experience</h2>

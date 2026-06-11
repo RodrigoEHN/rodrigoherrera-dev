@@ -3,8 +3,11 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
+import { Plus, Trash2 } from "lucide-react";
+import { DEFAULT_PORTFOLIO_CONTENT } from "@/lib/content-defaults";
 import { createClient } from "@/utils/supabase/client";
 import { TECH_OPTIONS, TECH_STACK } from "@/components/tech-config";
+import type { PortfolioContent } from "@/types/content";
 import type { Project, ProjectFormInput } from "@/types/project";
 
 const emptyForm: ProjectFormInput = {
@@ -21,6 +24,8 @@ type SupabaseError = {
   message?: string;
 };
 
+type AdminSection = "projects" | "hero" | "about" | "experience" | "tech";
+
 export function AdminDashboard() {
   const supabase = useMemo(() => createClient(), []);
 
@@ -30,11 +35,21 @@ export function AdminDashboard() {
   const [formData, setFormData] = useState<ProjectFormInput>(emptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [content, setContent] = useState<PortfolioContent>(DEFAULT_PORTFOLIO_CONTENT);
+  const [activeSection, setActiveSection] = useState<AdminSection>("projects");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
+
+  const adminSections: { id: AdminSection; label: string }[] = [
+    { id: "projects", label: "Projects" },
+    { id: "hero", label: "Hero" },
+    { id: "about", label: "About me" },
+    { id: "experience", label: "Experience" },
+    { id: "tech", label: "Tech stack" },
+  ];
 
   const imagePreview = useMemo(() => {
     if (imageFile) {
@@ -51,6 +66,45 @@ export function AdminDashboard() {
       }
     };
   }, [imagePreview]);
+
+  const mergeContent = useCallback((savedContent?: Partial<PortfolioContent> | null) => {
+    return {
+      hero: {
+        ...DEFAULT_PORTFOLIO_CONTENT.hero,
+        ...(savedContent?.hero ?? {}),
+      },
+      about: savedContent?.about?.length
+        ? savedContent.about
+        : DEFAULT_PORTFOLIO_CONTENT.about,
+      experience: savedContent?.experience?.length
+        ? savedContent.experience
+        : DEFAULT_PORTFOLIO_CONTENT.experience,
+      techStack: savedContent?.techStack?.length
+        ? savedContent.techStack
+        : DEFAULT_PORTFOLIO_CONTENT.techStack,
+    };
+  }, []);
+
+  const fetchContent = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("portfolio_content")
+      .select("content")
+      .eq("id", "main")
+      .maybeSingle();
+
+    if (error) {
+      if ((error as SupabaseError).code === "42P01") {
+        setContent(DEFAULT_PORTFOLIO_CONTENT);
+        setMessage("Run the updated Supabase SQL to enable portfolio content editing.");
+        return;
+      }
+
+      setMessage(error.message);
+      return;
+    }
+
+    setContent(mergeContent(data?.content as Partial<PortfolioContent> | null));
+  }, [mergeContent, supabase]);
 
   const fetchProjects = useCallback(async () => {
     const { data, error } = await supabase
@@ -95,14 +149,28 @@ export function AdminDashboard() {
 
   useEffect(() => {
     const loadSession = async () => {
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
+      const authResult = await Promise.race([
+        supabase.auth.getUser(),
+        new Promise<{ data: { user: User | null }; error: Error }>((resolve) => {
+          window.setTimeout(
+            () =>
+              resolve({
+                data: { user: null },
+                error: new Error("Supabase auth took too long to respond."),
+              }),
+            5000,
+          );
+        }),
+      ]);
+
+      const currentUser = authResult.data.user;
 
       setUser(currentUser);
 
       if (currentUser) {
-        await fetchProjects();
+        await Promise.all([fetchProjects(), fetchContent()]);
+      } else if ("error" in authResult && authResult.error) {
+        setMessage(authResult.error.message);
       }
 
       setLoading(false);
@@ -117,13 +185,14 @@ export function AdminDashboard() {
 
       if (session?.user) {
         void fetchProjects();
+        void fetchContent();
       } else {
         setProjects([]);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProjects, supabase]);
+  }, [fetchContent, fetchProjects, supabase]);
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -261,6 +330,101 @@ export function AdminDashboard() {
     await fetchProjects();
   };
 
+  const saveContent = async () => {
+    setMessage(null);
+    setSaving(true);
+
+    const { error } = await supabase.from("portfolio_content").upsert({
+      id: "main",
+      content,
+    });
+
+    setSaving(false);
+
+    if (error) {
+      if ((error as SupabaseError).code === "42P01") {
+        setMessage("Run the updated Supabase SQL to enable portfolio content editing.");
+        return;
+      }
+
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("Portfolio content updated.");
+  };
+
+  const updateAboutParagraph = (index: number, value: string) => {
+    setContent((current) => ({
+      ...current,
+      about: current.about.map((paragraph, paragraphIndex) =>
+        paragraphIndex === index ? value : paragraph,
+      ),
+    }));
+  };
+
+  const updateExperiencePoint = (experienceIndex: number, pointIndex: number, value: string) => {
+    setContent((current) => ({
+      ...current,
+      experience: current.experience.map((experience, index) =>
+        index === experienceIndex
+          ? {
+              ...experience,
+              points: experience.points.map((point, currentPointIndex) =>
+                currentPointIndex === pointIndex ? value : point,
+              ),
+            }
+          : experience,
+      ),
+    }));
+  };
+
+  const addExperience = () => {
+    setContent((current) => ({
+      ...current,
+      experience: [
+        ...current.experience,
+        {
+          role: "New role",
+          company: "Company",
+          period: "2026 - Present",
+          points: ["Describe your impact."],
+        },
+      ],
+    }));
+  };
+
+  const removeExperience = (experienceIndex: number) => {
+    setContent((current) => ({
+      ...current,
+      experience: current.experience.filter((_, index) => index !== experienceIndex),
+    }));
+  };
+
+  const addTechGroup = () => {
+    setContent((current) => ({
+      ...current,
+      techStack: [...current.techStack, { title: "New group", tech: ["New technology"] }],
+    }));
+  };
+
+  const updateTechGroup = (groupIndex: number, value: string) => {
+    setContent((current) => ({
+      ...current,
+      techStack: current.techStack.map((group, index) =>
+        index === groupIndex
+          ? {
+              ...group,
+              tech: value
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+            }
+          : group,
+      ),
+    }));
+  };
+
   const persistProjectOrder = async (orderedProjects: Project[]) => {
     const updates = orderedProjects.map((project, index) =>
       supabase.from("projects").update({ sort_order: index }).eq("id", project.id),
@@ -389,6 +553,25 @@ export function AdminDashboard() {
           </div>
         </div>
 
+        <div className="mb-8 flex flex-wrap gap-3">
+          {adminSections.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => setActiveSection(section.id)}
+              className={`rounded-full border px-4 py-2 text-sm transition ${
+                activeSection === section.id
+                  ? "border-[#2ec4b6] bg-[#2ec4b6] text-black"
+                  : "border-gray-800 bg-[#111111] text-gray-300 hover:border-[#2ec4b6]"
+              }`}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+
+        {activeSection === "projects" ? (
+          <>
         <form
           onSubmit={handleSubmit}
           className="grid gap-6 rounded-2xl border border-gray-800 bg-[#111111] p-6 shadow-2xl shadow-black/30 lg:grid-cols-[minmax(0,1fr)_360px] lg:p-8"
@@ -638,6 +821,308 @@ export function AdminDashboard() {
             ))
           )}
         </div>
+          </>
+        ) : null}
+
+        {activeSection === "hero" ? (
+          <section className="rounded-2xl border border-gray-800 bg-[#111111] p-6 shadow-2xl shadow-black/30 lg:p-8">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold">Hero</h2>
+              <p className="mt-1 text-sm text-gray-500">Edit the first section visitors see.</p>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              {[
+                ["name", "Name"],
+                ["title", "Title"],
+                ["githubUrl", "GitHub URL"],
+                ["linkedinUrl", "LinkedIn URL"],
+                ["imageUrl", "Profile image URL"],
+              ].map(([field, label]) => (
+                <label key={field} className="flex flex-col gap-2 text-sm font-medium text-gray-200">
+                  {label}
+                  <input
+                    value={content.hero[field as keyof typeof content.hero]}
+                    onChange={(event) =>
+                      setContent((current) => ({
+                        ...current,
+                        hero: { ...current.hero, [field]: event.target.value },
+                      }))
+                    }
+                    className="w-full rounded-xl border border-gray-700 bg-[#1a1a1a] p-3.5 text-white outline-none transition focus:border-[#2ec4b6] focus:ring-2 focus:ring-[#2ec4b6]/20"
+                  />
+                </label>
+              ))}
+
+              <label className="flex flex-col gap-2 text-sm font-medium text-gray-200 md:col-span-2">
+                Description
+                <textarea
+                  value={content.hero.description}
+                  onChange={(event) =>
+                    setContent((current) => ({
+                      ...current,
+                      hero: { ...current.hero, description: event.target.value },
+                    }))
+                  }
+                  className="min-h-32 w-full resize-y rounded-xl border border-gray-700 bg-[#1a1a1a] p-3.5 text-white outline-none transition focus:border-[#2ec4b6] focus:ring-2 focus:ring-[#2ec4b6]/20"
+                />
+              </label>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void saveContent()}
+              disabled={saving}
+              className="mt-6 rounded-xl bg-[#2ec4b6] px-8 py-3 font-semibold text-black transition hover:bg-[#1f9d8f] disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save Hero"}
+            </button>
+          </section>
+        ) : null}
+
+        {activeSection === "about" ? (
+          <section className="rounded-2xl border border-gray-800 bg-[#111111] p-6 shadow-2xl shadow-black/30 lg:p-8">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">About me</h2>
+                <p className="mt-1 text-sm text-gray-500">Each textarea becomes one paragraph.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setContent((current) => ({ ...current, about: [...current.about, ""] }))}
+                className="flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-200 transition hover:border-[#2ec4b6]"
+              >
+                <Plus size={16} />
+                Add
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {content.about.map((paragraph, index) => (
+                <div key={index} className="flex gap-3">
+                  <textarea
+                    value={paragraph}
+                    onChange={(event) => updateAboutParagraph(index, event.target.value)}
+                    className="min-h-28 w-full resize-y rounded-xl border border-gray-700 bg-[#1a1a1a] p-3.5 text-white outline-none transition focus:border-[#2ec4b6] focus:ring-2 focus:ring-[#2ec4b6]/20"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Remove paragraph"
+                    onClick={() =>
+                      setContent((current) => ({
+                        ...current,
+                        about: current.about.filter((_, paragraphIndex) => paragraphIndex !== index),
+                      }))
+                    }
+                    className="h-11 rounded-lg bg-red-500/15 px-3 text-red-300 transition hover:bg-red-500 hover:text-white"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void saveContent()}
+              disabled={saving}
+              className="mt-6 rounded-xl bg-[#2ec4b6] px-8 py-3 font-semibold text-black transition hover:bg-[#1f9d8f] disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save About"}
+            </button>
+          </section>
+        ) : null}
+
+        {activeSection === "experience" ? (
+          <section className="rounded-2xl border border-gray-800 bg-[#111111] p-6 shadow-2xl shadow-black/30 lg:p-8">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">Experience</h2>
+                <p className="mt-1 text-sm text-gray-500">Edit jobs and bullet points.</p>
+              </div>
+              <button
+                type="button"
+                onClick={addExperience}
+                className="flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-200 transition hover:border-[#2ec4b6]"
+              >
+                <Plus size={16} />
+                Add
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              {content.experience.map((experience, experienceIndex) => (
+                <div key={experienceIndex} className="rounded-xl border border-gray-800 bg-black/20 p-5">
+                  <div className="mb-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => removeExperience(experienceIndex)}
+                      className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300 transition hover:bg-red-500 hover:text-white"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {(["role", "company", "period"] as const).map((field) => (
+                      <input
+                        key={field}
+                        value={experience[field]}
+                        placeholder={field}
+                        onChange={(event) =>
+                          setContent((current) => ({
+                            ...current,
+                            experience: current.experience.map((item, index) =>
+                              index === experienceIndex
+                                ? { ...item, [field]: event.target.value }
+                                : item,
+                            ),
+                          }))
+                        }
+                        className="w-full rounded-xl border border-gray-700 bg-[#1a1a1a] p-3.5 text-white outline-none transition focus:border-[#2ec4b6] focus:ring-2 focus:ring-[#2ec4b6]/20"
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {experience.points.map((point, pointIndex) => (
+                      <div key={pointIndex} className="flex gap-3">
+                        <input
+                          value={point}
+                          onChange={(event) =>
+                            updateExperiencePoint(experienceIndex, pointIndex, event.target.value)
+                          }
+                          className="w-full rounded-xl border border-gray-700 bg-[#1a1a1a] p-3.5 text-white outline-none transition focus:border-[#2ec4b6] focus:ring-2 focus:ring-[#2ec4b6]/20"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Remove point"
+                          onClick={() =>
+                            setContent((current) => ({
+                              ...current,
+                              experience: current.experience.map((item, index) =>
+                                index === experienceIndex
+                                  ? {
+                                      ...item,
+                                      points: item.points.filter(
+                                        (_, currentPointIndex) => currentPointIndex !== pointIndex,
+                                      ),
+                                    }
+                                  : item,
+                              ),
+                            }))
+                          }
+                          className="rounded-lg bg-red-500/15 px-3 text-red-300 transition hover:bg-red-500 hover:text-white"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setContent((current) => ({
+                          ...current,
+                          experience: current.experience.map((item, index) =>
+                            index === experienceIndex
+                              ? { ...item, points: [...item.points, ""] }
+                              : item,
+                          ),
+                        }))
+                      }
+                      className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-200 transition hover:border-[#2ec4b6]"
+                    >
+                      Add point
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void saveContent()}
+              disabled={saving}
+              className="mt-6 rounded-xl bg-[#2ec4b6] px-8 py-3 font-semibold text-black transition hover:bg-[#1f9d8f] disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save Experience"}
+            </button>
+          </section>
+        ) : null}
+
+        {activeSection === "tech" ? (
+          <section className="rounded-2xl border border-gray-800 bg-[#111111] p-6 shadow-2xl shadow-black/30 lg:p-8">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">Tech stack</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Use comma-separated technologies. Supabase is now in Databases by default.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addTechGroup}
+                className="flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-200 transition hover:border-[#2ec4b6]"
+              >
+                <Plus size={16} />
+                Add
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {content.techStack.map((group, groupIndex) => (
+                <div key={groupIndex} className="grid gap-4 rounded-xl border border-gray-800 bg-black/20 p-5 md:grid-cols-[220px_minmax(0,1fr)_auto]">
+                  <input
+                    value={group.title}
+                    onChange={(event) =>
+                      setContent((current) => ({
+                        ...current,
+                        techStack: current.techStack.map((item, index) =>
+                          index === groupIndex ? { ...item, title: event.target.value } : item,
+                        ),
+                      }))
+                    }
+                    className="rounded-xl border border-gray-700 bg-[#1a1a1a] p-3.5 text-white outline-none transition focus:border-[#2ec4b6] focus:ring-2 focus:ring-[#2ec4b6]/20"
+                  />
+                  <input
+                    value={group.tech.join(", ")}
+                    onChange={(event) => updateTechGroup(groupIndex, event.target.value)}
+                    className="rounded-xl border border-gray-700 bg-[#1a1a1a] p-3.5 text-white outline-none transition focus:border-[#2ec4b6] focus:ring-2 focus:ring-[#2ec4b6]/20"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Remove group"
+                    onClick={() =>
+                      setContent((current) => ({
+                        ...current,
+                        techStack: current.techStack.filter((_, index) => index !== groupIndex),
+                      }))
+                    }
+                    className="rounded-lg bg-red-500/15 px-3 text-red-300 transition hover:bg-red-500 hover:text-white"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void saveContent()}
+              disabled={saving}
+              className="mt-6 rounded-xl bg-[#2ec4b6] px-8 py-3 font-semibold text-black transition hover:bg-[#1f9d8f] disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save Tech Stack"}
+            </button>
+          </section>
+        ) : null}
+
+        {activeSection !== "projects" && message ? (
+          <p className="mt-6 rounded-xl border border-[#2ec4b6]/25 bg-[#2ec4b6]/10 p-3 text-sm text-[#2ec4b6]">
+            {message}
+          </p>
+        ) : null}
       </div>
     </main>
   );

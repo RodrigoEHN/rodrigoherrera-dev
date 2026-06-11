@@ -10,47 +10,27 @@ import {
   SiSupabase,
   SiTailwindcss,
 } from "react-icons/si";
+import type { ReactNode } from "react";
+import type { TechGroup } from "@/types/content";
 
-const stack = [
-  {
-    title: "Frontend",
-    tech: [
-      { name: "React", icon: <FaReact className="text-[#61DBFB]" /> },
-      { name: "Next.js", icon: <SiNextdotjs className="text-white" /> },
-      { name: "JavaScript", icon: <SiJavascript className="text-[#F7DF1E]" /> },
-      { name: "Tailwind", icon: <SiTailwindcss className="text-[#38BDF8]" /> },
-    ],
-  },
-  {
-    title: "Backend",
-    tech: [
-      { name: "Node.js", icon: <FaNodeJs className="text-[#68A063]" /> },
-      { name: "Express", icon: <SiExpress className="text-gray-400" /> },
-      { name: "Supabase", icon: <SiSupabase className="text-[#3ECF8E]" /> },
-    ],
-  },
-  {
-    title: "Databases",
-    tech: [
-      { name: "MongoDB", icon: <SiMongodb className="text-[#47A248]" /> },
-      { name: "MySQL", icon: <SiMysql className="text-[#00758F]" /> },
-    ],
-  },
-  {
-    title: "Tools",
-    tech: [{ name: "Git", icon: <FaGitAlt className="text-[#F05032]" /> }],
-  },
-  {
-    title: "Learning",
-    tech: [
-      { name: "Docker", icon: <FaDocker className="text-[#0db7ed]" /> },
-      { name: "Django", icon: <SiDjango className="text-[#092E20]" /> },
-      { name: "FastAPI", icon: <SiFastapi className="text-[#009688]" /> },
-    ],
-  },
-];
+const techIcons: Record<string, ReactNode> = {
+  React: <FaReact className="text-[#61DBFB]" />,
+  "Next.js": <SiNextdotjs className="text-white" />,
+  JavaScript: <SiJavascript className="text-[#F7DF1E]" />,
+  Tailwind: <SiTailwindcss className="text-[#38BDF8]" />,
+  "Node.js": <FaNodeJs className="text-[#68A063]" />,
+  Node: <FaNodeJs className="text-[#68A063]" />,
+  Express: <SiExpress className="text-gray-400" />,
+  Supabase: <SiSupabase className="text-[#3ECF8E]" />,
+  MongoDB: <SiMongodb className="text-[#47A248]" />,
+  MySQL: <SiMysql className="text-[#00758F]" />,
+  Git: <FaGitAlt className="text-[#F05032]" />,
+  Docker: <FaDocker className="text-[#0db7ed]" />,
+  Django: <SiDjango className="text-[#092E20]" />,
+  FastAPI: <SiFastapi className="text-[#009688]" />,
+};
 
-export function TechStack() {
+export function TechStack({ stack }: { stack: TechGroup[] }) {
   return (
     <section id="tech" className="mx-auto max-w-7xl px-6 py-14 md:px-8 md:py-16">
       <h2 className="mb-10 text-2xl font-bold md:text-3xl">Tech Stack</h2>
@@ -64,13 +44,13 @@ export function TechStack() {
             <h3 className="mb-4 text-base font-semibold text-[#2ec4b6] md:text-lg">{group.title}</h3>
 
             <div className="flex flex-col gap-3">
-              {group.tech.map((item) => (
+              {group.tech.map((name) => (
                 <div
-                  key={item.name}
+                  key={name}
                   className="flex items-center gap-3 text-gray-300 transition-all duration-200 hover:translate-x-1"
                 >
-                  <span className="text-xl">{item.icon}</span>
-                  {item.name}
+                  <span className="text-xl">{techIcons[name] ?? null}</span>
+                  {name}
                 </div>
               ))}
             </div>
